@@ -35,7 +35,7 @@
 Download the SDR script through the following steps:
 
 ```
-git clone *****.git
+git clone https://github.com/xiaomiyongyuan/SDR.git
 ```
 
 Please create a new empty folder to store the run results and navigate into that folder. Copy the SDR/run.sh script into this folder.
