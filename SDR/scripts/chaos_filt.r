@@ -7,12 +7,11 @@ args <- commandArgs(trailingOnly = TRUE)
 print(args)
 alignintersect<-function(align1,align2,align3){
   del.list<-c()
-  cat("-------开始去除着丝粒和端粒区域的比对---------\n")
-  cat("去除前的：",dim(align1)[1],"\n")
+  cat("init",dim(align1)[1],"\n")
   ir1ref <- IRanges(start = align1$V8, end = align1$V9)
   ir1que  <- IRanges(start = align1$V3, end = align1$V4)
   ir2 <- IRanges(start =align2$ref_start , end =align2$ref_end)
-  overlapsref<-findOverlaps(ir1ref,ir2) ##我们的比对序列的参考基因组序列和人的端粒|着丝粒的交集
+  overlapsref<-findOverlaps(ir1ref,ir2)
   if(length(overlapsref@from)!=0){  
     del.list<-append(del.list,overlapsref@from)
   }
@@ -28,9 +27,8 @@ alignintersect<-function(align1,align2,align3){
   cat("去除后的：",dim(align1)[1],"\n")
   return(align1)
 }
-#-------------------function2 把pos改为saffire文件函数 -----------------------------------------------------
+
 flit2saffire<-function(pos,name){
-  cat("-------开始转saffire--------\n")
   col_names <- colnames(pos)
   col_names[c(1,3, 4, 8, 9,6,5)] <- c("query_chr","query_start", "query_end", "ref_start", "ref_end","ref_chr","orient")
   colnames(pos) <- col_names
@@ -46,11 +44,10 @@ flit2saffire<-function(pos,name){
   saffire$mismatches<-100
   write.table(saffire, file = paste(args[2],name,sep = ""), sep = "\t", row.names = FALSE,quote = FALSE)
 }
-#-------------------function4 split 并聚类 ----------------------
+
 
 split_region<-function(pos.chr.region){
   col_names <- colnames(pos.chr.region)
-  # 修改第3列，第4列，第8列和第9列的名字
   col_names[c(3, 4, 8, 9,5)] <- c("query_start", "query_end", "ref_start", "ref_end","orient")
   colnames(pos.chr.region) <- col_names
 
@@ -58,13 +55,11 @@ split_region<-function(pos.chr.region){
   if(nrow(x)!=0){
     
       selected_rows <- pos.chr.region$orient == '-'
-      # 计算新的 query_start 和 query_end 列的值
       #new_query_start <- pos.chr.region[selected_rows, ]$V2 - pos.chr.region[selected_rows, ]$query_end
       #new_query_end <- pos.chr.region[selected_rows, ]$V2 - pos.chr.region[selected_rows, ]$query_start
       
       new_query_start <- pos.chr.region[selected_rows, ]$query_end
       new_query_end <- pos.chr.region[selected_rows, ]$query_start
-      # 更新数据框中的值
       pos.chr.region[selected_rows, ]$query_start <- new_query_start
       pos.chr.region[selected_rows, ]$query_end <- new_query_end
 
@@ -111,19 +106,13 @@ if(args[7]=="ctn"){
 # cta=FALSE
 ctn=TRUE
 }
-## 分为三种情况：
-## 什么都没有
-## 只有参考基因组的端粒和着丝粒
-## 两者都有
-## cta=TRUE 都计算 FALSE都不计算
-## cts=TRUE 计算参考基因组的
-## ctn=TRUE 计算参考基因组的
 
-if(cts){  ##只计算参考基因组的
-  ## 端粒
+
+if(cts){  ##Only REF
+  ## telomere
   result_reftelo<-fread(args[9])
   result_quetelo<-""
-  ## 着丝粒
+  ## centromere
   result_refcentr<-fread(args[8])
   result_quecentr<-""
 }
@@ -141,25 +130,21 @@ if(ctn){
 }
 print(args[7])
 pos<-fread(args[3],fill=TRUE )
-cat("去除前的：",dim(pos)[1],"\n")
 chrnames <- unique(pos$V6)
 numeric_part <- as.numeric(gsub("\\D", "", chrnames))
-sorted_chrnames <- chrnames[order(numeric_part)] #染色体排序
-## 染色体
-## -----------对文件进行过滤：删除距离大于某某G的比对,相当于不考虑translocation的情况
-##把着丝粒和端粒区域的比对删掉
+sorted_chrnames <- chrnames[order(numeric_part)]
 for(chrid in sorted_chrnames){
   pos.chr<-pos[pos$V6==chrid,]
   print(chrid)
-  align1<-pos.chr  ##我们的比对
+  align1<-pos.chr 
   if(cts){
-    align2<-result_refcentr[result_refcentr$chr==chrid,]          ##人着丝粒
+    align2<-result_refcentr[result_refcentr$chr==chrid,]         
     intersect<-which(pos.chr$V8>=align2$ref_start & pos.chr$V9<=align2$ref_end)
     if(length(intersect)!=0){
       print("have")
       pos.chr<-pos.chr[-intersect,]
     }
-    align2<-result_reftelo[result_reftelo$chr==chrid,]          ##人端粒
+    align2<-result_reftelo[result_reftelo$chr==chrid,]         
     for(j in dim(align2)[1]){
       intersect<-which(pos.chr$V8>=align2[j,]$ref_start & pos.chr$V9<=align2[j,]$ref_end)
       if(length(intersect)!=0){
@@ -180,7 +165,7 @@ for(chrid in sorted_chrnames){
   #   rm(list=quelist)
   #   align2<-result_reftelo[result_reftelo$chr==chrid,]          ##人端粒
   #   for(j in unique(align1$V1)){
-  #     align3<-result_quetelo[result_quetelo$chr==j,]      ##猩猩端粒
+  #     align3<-result_quetelo[result_quetelo$chr==j,]     
   #     align1child<-alignintersect(align1[align1$V1==j,],align2,align3)
   #     assign(paste0("que", j),align1child)
   #   }
@@ -198,9 +183,8 @@ for(chrid in sorted_chrnames){
 
 pos<-do.call(rbind,mget(chrnames))
 pos$sourse<-1:dim(pos)[1]
-rm(list=chrnames) ##删除变量
-cat("去除着丝粒后的：",dim(pos)[1],"\n")
-flit2saffire(pos,"filt_process.saffire") ## 看看过滤了以后的比对结果
+rm(list=chrnames)
+flit2saffire(pos,"filt_process.saffire") 
 
 delall<-c()
 for(chrid in sorted_chrnames){
@@ -210,8 +194,8 @@ for(chrid in sorted_chrnames){
 }
 xxx<-pos[!pos$sourse %in% delall,]
 
-cat("去除chaos后的：",dim(xxx)[1],"\n")
-flit2saffire(xxx,"filt2_process.saffire") ## 看看过滤了以后的比对结果
+cat("After chaos：",dim(xxx)[1],"\n")
+flit2saffire(xxx,"filt2_process.saffire")
 
 
 write.table(xxx, file = args[4], sep = "\t", row.names = FALSE, col.names = FALSE,quote=FALSE)
