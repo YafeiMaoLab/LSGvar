@@ -1,6 +1,12 @@
 # denSDR
 
+
+
 ### Dependencies
+
+------
+
+
 
 - **minimap2**
 - **rustybam**
@@ -14,6 +20,10 @@
 - **IRanges**
 
 ## WorkFlow
+
+------
+
+
 
 ### data:
 
@@ -37,9 +47,9 @@ Download the SDR script through the following steps:
 git clone https://github.com/xiaomiyongyuan/SDR.git
 ```
 
-Please create a new empty folder to store the run results and navigate into that folder. Copy the SDR/run.sh script into this folder.
+Please create a new empty folder to store the run results and navigate into that folder. Copy the `SDR/run.sh` script into this folder.
 
-Configure config.json: To start the run, three essential input files are required :reference genome, aligned genome, and the artificial chromosome pairing file (refer to examples for guidance). Additionally, the centromere and telomere file is optional (alignments in this region will be filtered out during structural variation computation)."
+Configure `config.json`: To start the run, three essential input files are required :`reference genome`, `aligned genome`, and the `artificial chromosome pairing file` (refer to examples for guidance). Additionally, the `centromere and telomere file` is optional (alignments in this region will be filtered out during structural variation computation)."
 
 
 
@@ -60,24 +70,19 @@ bash run.sh 200000 300000 cts
 
 Explanation for the following three parameters: The first two parameters are filtering criteria. The first one is the clustering parameter for filtering, where a smaller value results in a stricter filter(Recommended parameters：200000), capable of removing more segments. The second parameter(Recommended parameters：300000) is the desired deletion length for alignments, where a larger value enforces a stricter filter,the last one you can choose cts or ctn.
 
-'cts' indicates inputting telomere and centromere fragments from the reference genome for filtering.
-'ctn' indicates no input of telomere and centromere files. (If the reference genome is T2T-CHM13, refer to the examples/T2Tdatabase for telomere and centromere files).
+'`cts`' indicates inputting telomere and centromere fragments from the reference genome for filtering.
+'`ctn`' indicates no input of telomere and centromere files. (If the reference genome is T2T-CHM13, refer to the examples/T2Tdatabase for telomere and centromere files).
 
 ### SV-annotation：
 
-The final result can be found in /result/end.txt.
-
-SV_(length<10k)
+The final result can be found in `/result/end.txt`.
 
 |                   | SV-annotation                                                |
 | ----------------- | ------------------------------------------------------------ |
 | SV_(length<10k)   | DEL(deletion)、INS(insertion)、DUP(duplication)、TRANS(translocation)、INV(inversion)、NM(no-matched) |
 | SDR_(length>=10k) | DEL(deletion)、INS(insertion)、DUP(duplication)、TRANS(translocation)、INV(inversion)、NM(no-matched) |
-| COMPLEX            | complex regions                                              |
+| COMPLEX           | complex regions                                              |
 
 
 
 ( The initial version may still have a few small issues, for reference.)
-
-
-
