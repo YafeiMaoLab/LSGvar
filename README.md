@@ -61,7 +61,7 @@ bash run.sh 200000 300000 cts
 Explanation for the following three parameters: The first two parameters are filtering criteria. The first one is the clustering parameter for filtering, where a smaller value results in a stricter filter(Recommended parameters：200000), capable of removing more segments. The second parameter(Recommended parameters：300000) is the desired deletion length for alignments, where a larger value enforces a stricter filter,the last one you can choose cts or ctn.
 
 'cts' indicates inputting telomere and centromere fragments from the reference genome for filtering.
-'ctn' indicates no input of telomere and centromere files. (If the reference genome is T2T-GRch38, refer to the examples/T2Tdatabase for telomere and centromere files).
+'ctn' indicates no input of telomere and centromere files. (If the reference genome is T2T-CHM13, refer to the examples/T2Tdatabase for telomere and centromere files).
 
 ### SV-annotation：
 
