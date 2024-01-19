@@ -73,7 +73,7 @@ SV_(length<10k)
 | ----------------- | ------------------------------------------------------------ |
 | SV_(length<10k)   | DEL(deletion)、INS(insertion)、DUP(duplication)、TRANS(translocation)、INV(inversion)、NM(no-matched) |
 | SDR_(length>=10k) | DEL(deletion)、INS(insertion)、DUP(duplication)、TRANS(translocation)、INV(inversion)、NM(no-matched) |
-| COMLEX            | complex regions                                              |
+| COMPLEX            | complex regions                                              |
 
 
 
