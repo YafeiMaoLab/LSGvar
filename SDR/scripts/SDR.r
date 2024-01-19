@@ -1,10 +1,8 @@
 
-library(ggplot2)
 library(dbscan)
 library(dplyr)
 library(data.table)
 library(IRanges)
-library(plotly)
 args <- commandArgs(trailingOnly = TRUE)
 source(args[1])
 print(args[2])
