@@ -2,19 +2,18 @@
 
 ### Dependencies
 
-1.minimap2
+- **minimap2**
+- **rustybam**
 
-2.rustybam
+- **dbscan**
 
-3.dbscan
+- **dplyr**
 
-4.dplyr
+- **data.table**
 
-5.data.table
+- **IRanges**
 
-6.IRanges
-
-### WorkFlow
+## WorkFlow
 
 ### data:
 
@@ -34,7 +33,7 @@
 
 Download the SDR script through the following steps:
 
-```
+```shell
 git clone https://github.com/xiaomiyongyuan/SDR.git
 ```
 
