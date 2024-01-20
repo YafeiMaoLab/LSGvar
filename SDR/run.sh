@@ -13,9 +13,9 @@ if [ ! -d "${nowdic}/saffireh1" ]; then
 	mkdir "${nowdic}/saffireh1"
 fi
 if [ "$3" = "ctn" ]; then
-    Rscript "${tool_path}scripts/chaos_filt.r" "/home/jmhan/SDR/run_chimpanzee/p_c_chrlen1.txt" "${nowdic}/saffireh1/" "/home/jmhan/SDR/run_chimpanzee/hm_prihap1.flt.paf" "${nowdic}/afterchaos_hap1.flt.paf" $1 $2 $3
+    Rscript "${tool_path}scripts/chaos_filt.r" "${nowdic}p_c_chrlen1.txt" "${nowdic}/saffireh1/" "${nowdic}hm_prihap1.flt.paf" "${nowdic}/afterchaos_hap1.flt.paf" $1 $2 $3
 elif [ "$3" = "cts" ]; then
-    Rscript "${tool_path}scripts/chaos_filt.r" "/home/jmhan/SDR/run_chimpanzee/p_c_chrlen1.txt" "${nowdic}/saffireh1/" "/home/jmhan/SDR/run_chimpanzee/hm_prihap1.flt.paf" "${nowdic}/afterchaos_hap1.flt.paf" $1 $2 $3 ${centro} ${telome}
+    Rscript "${tool_path}scripts/chaos_filt.r" "${nowdic}p_c_chrlen1.txt" "${nowdic}/saffireh1/" "${nowdic}hm_prihap1.flt.paf" "${nowdic}/afterchaos_hap1.flt.paf" $1 $2 $3 ${centro} ${telome}
 else
     echo "please input ctn/cts parameter"
 fi
