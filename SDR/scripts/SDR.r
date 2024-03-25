@@ -17,16 +17,12 @@ sorted_chrnames <- chrnames[order(numeric_part)]
 
 
 
-# pos$ref_start<-pos$ref_start+1
-# pos$query_start<-pos$query_start+1
-
-# store$len1<-store$ref_end-store$ref_start
-# store$len2<-store$query_end-store$query_start
 
 
-
+INVball<-data.frame()
 cluster0paras<-700000 
 cluster1paras<-700000
+#transpara=10 
 #sorted_chrnames<- sorted_chrnames[14:23]
 for(chrid in sorted_chrnames){
 
@@ -37,7 +33,28 @@ for(chrid in sorted_chrnames){
   smalltrans<- data.frame(ref_chr=0,ref_start = 0, ref_end = 0,query_chr=0,query_start = 0, query_end = 0,orient=0,cluster=0)
   pos.chr<-pos[pos$ref_chr==chrid,]
   pos.chr<-pos.chr[order(pos.chr$ref_start),]
-  
+  highdupall<-data.frame(ref_chr=0,ref_start = 0, ref_end = 0)
+
+  ## 
+  list<-c()
+  dupset<-highdupregion(pos.chr)
+  if(length(dupset)!=1){
+    for (dupsetname in names(dupset)){
+      print(length(dupset[[dupsetname]]))
+      if(length(dupset[[dupsetname]])>20){
+        vectore<-append(dupset[[dupsetname]],as.numeric(dupsetname))
+        higndup<-pos.chr[vectore,]
+        list<-append(list,vectore)
+        higndup$cluster=1
+        duplication<-rbind(duplication,higndup[,colnames(duplication)])
+        highdupall<-rbind(highdupall,c(chrid,min(higndup$ref_start),max(higndup$ref_end)))
+      }
+    }
+    if(length(list)!=0){
+      pos.chr<-pos.chr[-list,]
+    }
+  }
+ 
   
 
   endcluster0<-split_region(pos.chr,0,cluster0paras)
@@ -70,6 +87,7 @@ for(chrid in sorted_chrnames){
   # }
   # 
   aftertans<-smalltransf(endcluster0)
+
   # if(length(aftertans$tran)!=0){
   #   data1<-aftertans$tran
   #   for(j in 2:dim(duplication)[1]){
@@ -85,19 +103,20 @@ for(chrid in sorted_chrnames){
   
   
   #dotplot_cluster(endcluster0)
+
   for(i in unique((aftertans$tranbefore)$cluster)){
     a<-aftertans$tranbefore[(aftertans$tranbefore)$cluster==i,]
     a$cluster<-as.character(1:dim(a)[1])
     if(sum(a$orient == "-") > 0.5* nrow(a)){
-      reverse_end<-reverse.region(a,chrid,3)
+      reverse_end<-reverse.region(a,chrid,3,"init")
     }
     if(sum(a$orient == "+") > 0.5 * nrow(a) |sum(a$orient == "-") == 0.5 * nrow(a)){
-      reverse_end<-reverse.region(a,chrid,2)
+      reverse_end<-reverse.region(a,chrid,2,"init")
     }
     if(exists("reverse_end")){
       middle<-reverse_end$reverse
       if(nrow(middle)!=0){
-        middle<-intersect.unit(middle,unique(middle$query_chr)) 
+        middle<-intersect.unit(middle,unique(middle$query_chr)) #将among中复杂片段作为一个大SDR
       }
       if(sum(a$orient == "+") > 0.5 * nrow(a) & nrow(middle)!=0){
         middle$orient<-"+"
@@ -134,18 +153,44 @@ for(chrid in sorted_chrnames){
   
   
   endcluster0<-aftertans$endcluster0
-  endcluster1<-split_region(endcluster0,1,cluster1paras)
+  #\dotplot_cluster(endcluster1)
 
+
+  endcluster1<-split_region(endcluster0,1,cluster1paras)
+  
   endcluster1<-minus.next(endcluster1)
-  inver<-inversion.extract(endcluster1,chrid)
+  
+  i=0
+  for(miusclu in unique(endcluster1[endcluster1$orient=='-',]$cluster)){
+    print(miusclu)
+    list<-which(endcluster1$cluster==miusclu)
+    if(length(list)>=2){
+      for(line in 2:length(list)){
+        if(endcluster1[list[line],]$ref_start-endcluster1[list[line-1],]$ref_end >50000){
+          endcluster1[list[line],]$cluster<-paste(endcluster1[list[line-1],]$cluster,i,sep="")
+          i<-i+1
+        }else{
+          endcluster1[list[line],]$cluster<-endcluster1[list[line-1],]$cluster
+        }
+      }
+    }
+   
+    endcluster1[endcluster1$cluster==miusclu,]
+  }
+  
+  
+  
+  
+  
+  inver<-inversion.extract(endcluster1,chrid)  
   list<-which(rle(rle(endcluster1$cluster)$lengths)$values==1 &rle(rle(endcluster1$cluster)$lengths)$lengths >5)
+  chaoval<-rle(rle(endcluster1$cluster)$lengths)$values
+  chaolen<-rle(rle(endcluster1$cluster)$lengths)$lengths
   cross.region<-cross.calcu(endcluster1)
   initclsuer<-1000
   for(k in list){
-    chaoval<-rle(rle(endcluster1$cluster)$lengths)$values
-    chaolen<-rle(rle(endcluster1$cluster)$lengths)$lengths
-    start<-sum(chaoval[1:k-1]*chaolen[1:k-1])+1
     
+    start<-sum(chaoval[1:k-1]*chaolen[1:k-1])+1
     endcluster1[intersect(which(!endcluster1$cluster %in% cross.region),start:(start+chaolen[k]-1)),]$cluster<-as.character(initclsuer)
     print(endcluster1[intersect(which(!endcluster1$cluster %in% cross.region),start:(start+chaolen[k]-1)),])
     chaos<-endcluster1[intersect(which(!endcluster1$cluster %in% cross.region),start:(start+chaolen[k]-1)),]
@@ -159,7 +204,7 @@ for(chrid in sorted_chrnames){
     initclsuer<-initclsuer+1
   }
   
-  reverse_end<-reverse.region(endcluster1,chrid,0)
+  reverse_end<-reverse.region(endcluster1,chrid,0,"init")
   duplic<-reverse_end$dup
   if(!is.character(duplic)){
     if(nrow(duplic)!=0){
@@ -167,17 +212,17 @@ for(chrid in sorted_chrnames){
     }
     
   }
-  minimap<-reverse_end$minimaploc 
+  minimap<-reverse_end$minimaploc  
   
   
   if ("delsytenic" %in% names(reverse_end)){
     for(cluster in unique(reverse_end$delsytenic$cluster)){
       datalist<-reverse_end$delsytenic[reverse_end$delsytenic$cluster==cluster,]
       datalist$cluster<-1:dim(datalist)[1]
-      reverse_end1<-reverse.region(datalist,unique(datalist$ref_chr),2)
+      reverse_end1<-reverse.region(datalist,unique(datalist$ref_chr),2,"init")
       middle<-reverse_end1$reverse
       if(nrow(middle)!=0){
-        middle<-intersect.unit(middle,unique(middle$query_chr))
+        middle<-intersect.unit(middle,unique(middle$query_chr)) 
         middle$orient<-"no"
         storesmall<-rbind(storesmall,middle)
       }
@@ -188,7 +233,9 @@ for(chrid in sorted_chrnames){
   for (value in unique(reverse_end$reverse$query_chr)) {
     datarev<-reverse_end$reverse[reverse_end$reverse$query_chr==value,]
     if(nrow(datarev)!=0){
+
       rows_to_remove <- which(datarev$query_chr == value)
+
       if (length(rows_to_remove) > 1) {
         startend<-datarev[c(rows_to_remove[1], tail(rows_to_remove, 1)), ]
         store<-rbind(store,datarev[-c(rows_to_remove[1], tail(rows_to_remove, 1)), ]) 
@@ -197,6 +244,7 @@ for(chrid in sorted_chrnames){
       }
     }
   }
+  
 
   vectore<-which(store$ref_start-store$ref_end==2)
   if(length(vectore)!=0){
@@ -214,8 +262,9 @@ for(chrid in sorted_chrnames){
   }
   
   if(nrow(store[store$ref_start>store$ref_end,])!=0){
-    store[store$ref_start>store$ref_end,]$ref_end=store[store$ref_start>store$ref_end,]$ref_start 
+    store[store$ref_start>store$ref_end,]$ref_end=store[store$ref_start>store$ref_end,]$ref_start
   }
+  initstore<-store[store$ref_chr!=0,]
   if(length(unique(store$query_chr)[-1])!=0){
     for(chr_child in unique(store$query_chr)[-1]){
       new_row<-intersect.unit(store,chr_child) 
@@ -223,7 +272,7 @@ for(chrid in sorted_chrnames){
         new_row<-complex(new_row)
       }
       percen<-max(new_row[new_row$anno=="COMPLEX",]$ref_end-new_row[new_row$anno=="COMPLEX",]$ref_start)
-      if(percen>100000000){ 
+      if(percen>100000000){
         new_row<-intersect.unit(store,chr_child) 
       }
       assign(chr_child,new_row)
@@ -231,6 +280,7 @@ for(chrid in sorted_chrnames){
     store<-docall(store)
     rm(list=unique(store$query_chr)) 
   }
+  store<-rbind(store,anti_join(initstore,store))
   
   if(dim(inver)[1]!=0){
     inver<-inver[,-1]
@@ -238,36 +288,38 @@ for(chrid in sorted_chrnames){
     inversion<-rbind(inversion,inver)
   }
 
-  
-  endcluster1<-reverse_end$endcluster1
 
+  endcluster1<-reverse_end$endcluster1
 
   
   m=0
   count_minus <- table(endcluster1$cluster[endcluster1$orient == '-'])
-  count_total <- table(endcluster1$cluster[endcluster1$cluster%in% as.numeric(names(count_minus))])
+  count_total <- table(endcluster1$cluster[endcluster1$cluster%in% names(count_minus)])
   ##cluster
-  for(clusid in as.numeric(names(count_minus[(count_minus / count_total) >0.6])) ){
+  for(clusid in names(count_minus[(count_minus / count_total) >0.6]) ){
+    print(clusid)
     miuscluster<-split_region(endcluster1[endcluster1$cluster==clusid,],1,100000)
     minusduplic<-duplication_extract(endcluster1,miuscluster)  
     if(!isEmpty(minusduplic$dupli)){
       duplication<-rbind(duplication,minusduplic$dupli[,colnames(duplication)])
     }
     
-   
-    reverse_end<-reverse.region(miuscluster,chrid,3)
+    reverse_end<-reverse.region(miuscluster,chrid,3,"mius")
     middle<-reverse_end$reverse
     if(nrow(middle)!=0){
-  
+      #middle[middle$ref_start>middle$ref_end,]$ref_end=middle[middle$ref_start>middle$ref_end,]$ref_start 
       local<-intersect.unit(middle,unique(middle$query_chr))
       changed_rows <- anti_join(local,middle)
       store<-rbind(store,inner_join(local,middle))
       if(nrow(changed_rows)!=0){
         changed_rows$anno<-'COMPLEX'
         store<-rbind(store,changed_rows[,colnames(store)])
+        store<-rbind(store,middle)
+        store<-distinct(store)
       }}
     
     if(length(unique(miuscluster$cluster))!=1){
+      miuscluster<-reverse_end$endcluster1
       miuscluster$cluster<-paste(miuscluster$cluster, "8",as.character(m), sep = "")
       endcluster1<-endcluster1[endcluster1$cluster!=clusid,]
       endcluster1<-rbind(endcluster1,miuscluster)
@@ -278,11 +330,12 @@ for(chrid in sorted_chrnames){
   
   
   count_minus <- table(endcluster1$cluster[endcluster1$orient == '-'])
-  count_total <- table(endcluster1$cluster[endcluster1$cluster%in% as.numeric(names(count_minus))])
+  count_total <- table(endcluster1$cluster[endcluster1$cluster %in% names(count_minus)])
+
   
   
   
-  SDRminudlist<-as.numeric(names(count_minus[(count_minus / count_total) >0.6])) ##cluster
+  SDRminudlist<-names(count_minus[(count_minus / count_total) >0.6]) ##cluster
 
   for(k in SDRminudlist){
     region<-endcluster1[endcluster1$cluster==k,]
@@ -291,7 +344,15 @@ for(chrid in sorted_chrnames){
     }
     #endcluster2<-split_region(region,2)
     region$cluster<-1:dim(region)[1]
-   
+    #dotplot_cluster(endcluster2)
+    #endcluster2<-inte.minud(endcluster2,2)## 对其中的inversion进行整合
+    #claster2<-(repeat.integrate(region,2)) ##将inversion返回去了
+    # endcluster2<-claster2$afterdup
+    # if(!is.null(claster2$repeat.region)){
+    #   dup<-distinct(claster2$repeat.region)
+    #   duplication<-rbind(duplication,dup)
+    # }
+
     if(dim(region)[1]==1){
       next
     }
@@ -304,7 +365,7 @@ for(chrid in sorted_chrnames){
     endcluster2before<-endcluster2$pos_end
     orientid="+"
     endcluster2<-smallcluster(endcluster2$pos_end,orientid) 
-    reverse_end<-reverse.region(endcluster2,chrid,3)
+    reverse_end<-reverse.region(endcluster2,chrid,3,"init")
     middle<-reverse_end$reverse
     if(nrow(middle)!=0){
       #middle[middle$ref_start>middle$ref_end,]$ref_end=middle[middle$ref_start>middle$ref_end,]$ref_start 
@@ -313,6 +374,8 @@ for(chrid in sorted_chrnames){
       if(nrow(changed_rows)!=0){
         changed_rows$anno<-'COMPLEX'
         store<-rbind(store,changed_rows[,colnames(store)])
+        store<-rbind(store,middle)
+        store<-distinct(store)
       }
       
       if(length(which(middle$query_start>middle$query_end))!=0){
@@ -321,7 +384,7 @@ for(chrid in sorted_chrnames){
       }
       if(nrow(middle)!=0){
         middle$orient<-"-"
-        storesmall<-rbind(storesmall,middle[,colnames(storesmall)]) 
+        storesmall<-rbind(storesmall,middle[,colnames(storesmall)])
       }
       
     }
@@ -352,14 +415,15 @@ for(chrid in sorted_chrnames){
     endcluster2before<-endcluster2$pos_end
     orientid="-"
     endcluster2<-smallcluster(endcluster2$pos_end,orientid) 
-    reverse_end<-reverse.region(endcluster2,chrid,2)
+    reverse_end<-reverse.region(endcluster2,chrid,2,"init")
     middle<-reverse_end$reverse
-    local<-intersect.unit(middle,unique(middle$query_chr)) 
+    local<-intersect.unit(middle,unique(middle$query_chr))
     changed_rows <- anti_join(local,middle)
     if(nrow(changed_rows)!=0){
       print(k)
       changed_rows$anno<-'COMPLEX'
       store<-rbind(store,changed_rows[,colnames(store)])
+      
     }
     # middle[middle$ref_start>middle$ref_end,]$ref_end=middle[middle$ref_start>middle$ref_end,]$ref_start 
     # middle<-intersect.unit(middle,unique(middle$query_chr)) 
@@ -374,6 +438,7 @@ for(chrid in sorted_chrnames){
     storesmall<-insertsmall(endcluster2before,storesmall,orientid)
     
   }
+
   inversion$anno<-"INV"
   inversion$orient<-"-"
   duplication<-distinct(duplication)
@@ -411,11 +476,52 @@ for(chrid in sorted_chrnames){
     newcomplex$querylen<-newcomplex$query_end-newcomplex$query_start
     data<-rbind(data,newcomplex[,colnames(data)])
   }
+  ## 加一步计算一下breakpoints
+  INVb<-inversion[inversion$ref_chr!=0,]
+  if(nrow(INVb)!=0){
+    INVb$ref_p_1s<-0
+    INVb$ref_p_1e<-0
+    INVb$que_p_1s<-0
+    INVb$que_p_1e<-0
+    INVb$ref_p_2s<-0
+    INVb$ref_p_2e<-0
+    INVb$que_p_2s<-0
+    INVb$que_p_2e<-0
+    for(i in 1:dim(INVb)[1]){
+      invpos<-max(which(pos.chr$ref_start==INVb[i,]$ref_start & pos.chr$orient=='-'))
+      if(invpos!=1){
+        INVb[i,]$ref_p_1s<-pos.chr[invpos-1,]$ref_end
+        INVb[i,]$ref_p_1e<-pos.chr[invpos,]$ref_start
+        INVb[i,]$que_p_1s<-pos.chr[invpos-1,]$query_end
+        INVb[i,]$que_p_1e<-pos.chr[invpos,]$query_start
+      }
+     
+      invpos<-max(which(pos.chr$ref_end==INVb[i,]$ref_end & pos.chr$orient=='-'))
+      if(invpos!=dim(pos.chr)[1]){
+        INVb[i,]$ref_p_2s<-pos.chr[invpos,]$ref_end
+        INVb[i,]$ref_p_2e<-pos.chr[invpos+1,]$ref_start
+        INVb[i,]$que_p_2s<-pos.chr[invpos,]$query_end
+        INVb[i,]$que_p_2e<-pos.chr[invpos+1,]$query_start
+      }
+      
+    }
+    INVball<-rbind(INVball,INVb)
+  }
+data<-data[data$ref_start<=data$ref_end & data$query_start<=data$query_end,]
+if(nrow(highdupall[highdupall$ref_chr!=0,])!=0){
+  hidup<-highdupall[highdupall$ref_chr!=0,]
+  hidup$query_chr=""
+  hidup$query_start=""
+  hidup$query_end=""
+  hidup$anno="high-dup"
+  hidup$orient=""
+  hidup$reflen=""
+  hidup$querylen=""
+  data<-rbind(data,hidup)
+}
   
   
   write.table(data, paste(args[4],chrid,"SDRend.tsv",sep = ""), quote = FALSE, sep = "\t", row.names = FALSE)
-  #write.table(minimap, paste("D:/MS/saffire测试/R/minimap/",chrid,"minimap.tsv",sep = ""), quote = FALSE, sep = "\t", row.names = FALSE)
+  
 }
-
-#write.csv(result_data[result_data$SV=="DUP",], paste("D:/MS/saffire测试/R/result/SDRend.csv",sep = ""), quote = FALSE, row.names = FALSE)
 
