@@ -24,7 +24,7 @@ alignintersect<-function(align1,align2,align3){
   }
   if(length(del.list)!=0)
   {align1<-align1[-del.list,]}
-  cat("去除后的：",dim(align1)[1],"\n")
+  cat("afterdel：",dim(align1)[1],"\n")
   return(align1)
 }
 
@@ -155,7 +155,7 @@ for(chrid in sorted_chrnames){
   }
   # if(cta){
   #   quelist <- paste0("que", unique(align1$V1))
-  #   align2<-result_refcentr[result_refcentr$chr==chrid,]          ##人着丝粒
+  #   align2<-result_refcentr[result_refcentr$chr==chrid,]          
   #   for(j in unique(align1$V1)){
   #     align3<-result_quecentr[result_quecentr$chr==j,]
   #     align1child<-alignintersect(align1[align1$V1==j,],align2,align3)
@@ -163,7 +163,7 @@ for(chrid in sorted_chrnames){
   #   }
   #   align1<-do.call(rbind,mget(quelist))
   #   rm(list=quelist)
-  #   align2<-result_reftelo[result_reftelo$chr==chrid,]          ##人端粒
+  #   align2<-result_reftelo[result_reftelo$chr==chrid,]        
   #   for(j in unique(align1$V1)){
   #     align3<-result_quetelo[result_quetelo$chr==j,]     
   #     align1child<-alignintersect(align1[align1$V1==j,],align2,align3)
